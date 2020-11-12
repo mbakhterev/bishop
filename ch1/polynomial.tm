@@ -3,40 +3,61 @@
 <style|generic>
 
 <\body>
-  <\session|scheme|default>
-    <\folded-io|Scheme] >
+  <\program|scheme|default>
+    <\unfolded-prog-io|Scheme] >
       (getcwd)
-    <|folded-io>
-      "/home/mob/wrk/bishop"
-    </folded-io>
+    <|unfolded-prog-io>
+      <text|/home/mob/wrk/bishop>
+    </unfolded-prog-io|>
 
-    <\unfolded-io|Scheme] >
+    <\input|Scheme] >
       (load "ch1/polynomial.scm")
-    <|unfolded-io>
-      <timing|303 msec>
-    </unfolded-io>
+    </input>
 
-    <\unfolded-io|Scheme] >
+    <\input|Scheme] >
       (define raw-data (load-csv "data/vpered-7-all.csv"))
-    <|unfolded-io>
-      <timing|2.904 sec>
-    </unfolded-io>
+    </input>
 
-    <\unfolded-io|Scheme] >
+    <\input|Scheme] >
       (gc)
-    <|unfolded-io>
-      <timing|1.424 sec>
-    </unfolded-io>
+    </input>
+
+    <\input|Scheme] >
+      (define frame (reframe raw-data))
+    </input>
+
+    <\input|Scheme] >
+      (define frame-2 (pick frame "time" "axRaw_1"))
+    </input>
+
+    <\input|Scheme] >
+      (define shape '(cline (point "-6.08337278210347" "3.79268362048499")
+      (point "-3.19652437011566" "3.33295989715251") (point
+      "-0.738158172254764" "1.07232209648264") (point "2.74613224073265"
+      "2.473811582599"))))
+    </input>
+
+    <\unfolded-prog-io|Scheme] >
+      `(with "gr-frame" (tuple "x-scale" "0.05gw" "y-scale" "0.05gw" (tuple
+      "0.5gw" "0.5gh")) "gr-grid" (tuple "cartesian" (point "0" "0") "1")
+      "gr-grid-aspect" (tuple (tuple "axes" "#808080")) (graphics ,shape))
+    <|unfolded-prog-io>
+      <text|<with|gr-frame|<tuple|x-scale|0.05gw|y-scale|0.05gw|<tuple|0.5gw|0.5gh>>|gr-grid|<tuple|cartesian|<point|0|0>|1>|gr-grid-aspect|<tuple|<tuple|axes|#808080>>|<graphics|<cline|<point|-6.08337278210347|3.79268362048499>|<point|-3.19652437011566|3.33295989715251>|<point|-0.738158172254764|1.07232209648264>|<point|2.74613224073265|2.473811582599>>>>>
+    </unfolded-prog-io|>
 
     <\input|Scheme] >
       \;
     </input>
-  </session>
+  </program>
 </body>
 
 <\initial>
   <\collection>
+    <associate|font-base-size|8>
+    <associate|page-height|auto>
     <associate|page-medium|automatic>
+    <associate|page-type|a5>
+    <associate|page-width|auto>
     <associate|prog-scripts|scheme>
   </collection>
 </initial>
