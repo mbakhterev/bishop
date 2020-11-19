@@ -2,7 +2,8 @@
 
 (if (not (and (file-exists? "ch1/polynomial.scm")
               (file-exists? "lib/csv")
-              (file-exists? "data")))
+              (file-exists? "data")
+              #f))
     (error "Load this source with current working directory set to repository root"))
 
 (if (let loop ((l %load-path))
@@ -13,11 +14,20 @@
 
 ;;; Хаки закончились
 
-(use-modules ; (srfi srfi-1)
+(use-modules (ice-9 optargs)
+             (ice-9 syncase)
              (srfi srfi-13)
              (csv csv))
 
-(define (show-filename) (object->tree filename))
+(define-syntax skip-keys
+  (syntax-rules ()
+    ((skip-keys args keys ...) (let loop ((l args))
+                                 (if (null? l)
+                                     '()
+                                     (let ((v (car l)))
+                                       (if (or (eq? v keys) ...)
+                                           (loop (cddr l))
+                                           (cons v (loop (cdr l))))))))))
 
 (define (map-vector f v)
   (let* ((n (vector-length v))
@@ -65,7 +75,7 @@
                      (frame:data raw))))
 
 
-(define (tabulate frame font-size from upto)
+(define* (tabulate frame font-size #:optional from upto)
   (let* ((f (if from from 0))
          (t (if upto upto (f32vector-length (vector-ref (frame:data frame) 0))))
          (h (frame:header frame))
@@ -75,7 +85,7 @@
          (row (lambda (r) (quasiquote (row (unquote-splicing (reverse r))))))
          (gather (lambda (i) (do
                                ((j 0 (1+ j))
-                                (r '() (cons (cell (format #f "~,2f" (get i j)))
+                                (r '() (cons (cell (format #f "~f" (get i j)))
                                              r)))
                                ((>= j m) (row r)))))
          (header (do
@@ -90,14 +100,19 @@
                                        (table (unquote-splicing (cons header rows))))))))
 
 ; FIXME: Надо бы проверять повторы
-(define (pick frame . fields)
+(define* (pick frame #:key (copy #t) . fields)
   (let* ((positions (make-hash-table))
          (h (frame:header frame))
          (d (frame:data frame))
          (m (vector-length h))
-         (ph (list->vector fields))
+         (ph (list->vector (skip-keys fields #:copy)))
          (pm (vector-length ph))
-         (pd (make-vector pm)))
+         (pd (make-vector pm))
+         (cp (if (not copy)
+                 identity
+                 (lambda (v) (let ((u (make-f32vector (f32vector-length v))))
+                               (array-copy! v u)
+                               u)))))
     (do ((i 0 (1+ i))) ((>= i m))
       (hash-set! positions (vector-ref h i) i))
 
@@ -105,16 +120,7 @@
       (let* ((k (vector-ref ph i))
              (j (hash-ref positions k)))
         (if (not j)
-            (error "No such key:" k)
-            (vector-set! pd i (vector-ref d j)))))))
+            (error "No such field:" k)
+            (vector-set! pd i (cp (vector-ref d j))))))))
 
-; Тесты
-; (define raw-data (load-csv "data/vpered-7-all.csv"))
-; (define frame (reframe raw-data))
-; 
-; (write frame)
-; (newline)
-; 
-; (format #t "header width: ~a~%data width: ~a~%"
-;         (vector-length (frame:header frame))
-;         (vector-length (frame:data frame)))
+

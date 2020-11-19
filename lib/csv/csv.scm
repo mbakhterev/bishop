@@ -42,13 +42,13 @@
      (else (lp (have-row (csv-read-row port delimiter have-cell (new-row seed))
                          seed))))))
 
-(define* (make-csv-reader delimiter #:key
-                          (new-row (lambda (rows) '()))
-                          (have-cell (lambda (cell row)
-                                       (cons cell row)))
+(define* (make-csv-reader delimiter
+                          #:key
+                          (new-row (lambda x '()))
+                          (have-cell cons)
                           (have-row (lambda (row rows)
                                       (cons (list->vector (reverse row)) rows)))
                           (init-seed '()))
-  (lambda (port)
-    (reverse
-     (csv-read port delimiter new-row have-cell have-row init-seed))))
+         (lambda (port)
+           (reverse
+             (csv-read port delimiter new-row have-cell have-row init-seed))))
