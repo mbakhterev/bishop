@@ -4,44 +4,68 @@
 
 <\body>
   <\program|scheme|default>
-    <\folded-prog-io|Scheme] >
+    <\unfolded-prog-io|Scheme] >
       (getcwd)
-    <|folded-prog-io>
+    <|unfolded-prog-io>
       "/home/mob/wrk/bishop"
+    </unfolded-prog-io|>
 
-      <timing|354 msec>
-    </folded-prog-io|>
-
-    <\unfolded-prog-io|Scheme] >
+    <\input|Scheme] >
       (load "ch1/polynomial.scm")
-    <|unfolded-prog-io>
-      <timing|1.163 sec>
-    </unfolded-prog-io|>
+    </input>
 
-    <\unfolded-prog-io|Scheme] >
+    <\input|Scheme] >
       (define frame (reframe (load-csv "data/vpered-7-all.csv")))
-    <|unfolded-prog-io>
-      <timing|4.316 sec>
-    </unfolded-prog-io|>
+    </input>
 
-    <\unfolded-prog-io|Scheme] >
+    <\input|Scheme] >
       (gc)
-    <|unfolded-prog-io>
-      <timing|846 msec>
-    </unfolded-prog-io|>
+    </input>
 
-    <\unfolded-prog-io|Scheme] >
+    <\input|Scheme] >
       (define frame-2 (pick frame "time" "axRaw_1"))
-    <|unfolded-prog-io>
-      <timing|464 msec>
-    </unfolded-prog-io|>
+    </input>
 
     <\unfolded-prog-io|Scheme] >
       (tabulate frame-2)
     <|unfolded-prog-io>
       <text|<small|<wide-tabular|<table|<row||<cell|time>|<cell|axRaw_1>>|<row|0|<cell|625.925720214844>|<cell|181.0>>|<row|1|<cell|625.925720214844>|<cell|168.0>>|<row|2|<cell|625.92578125>|<cell|159.0>>|<row|3|<cell|625.92578125>|<cell|136.0>>|<row|4|<cell|625.925842285156>|<cell|103.0>>|<row|5|<cell|625.925842285156>|<cell|128.0>>|<row|6|<cell|625.925842285156>|<cell|125.0>>|<row|7|<cell|625.925842285156>|<cell|132.0>>|<row|8|<cell|625.925903320312>|<cell|193.0>>|<row|9|<cell|625.925903320312>|<cell|141.0>>|<row|10|<cell|625.925903320312>|<cell|160.0>>|<row|11|<cell|625.925964355469>|<cell|170.0>>|<row|12|<cell|625.925964355469>|<cell|163.0>>|<row|13|<cell|625.925964355469>|<cell|153.0>>|<row|14|<cell|625.925964355469>|<cell|158.0>>|<row|15|<cell|625.926025390625>|<cell|207.0>>>>>>
+    </unfolded-prog-io|>
 
-      <timing|432 msec>
+    <\input|Scheme] >
+      (define time-min-f (frame-fold min +inf.0 frame-2 "time"))
+    </input>
+
+    <\input|Scheme] >
+      (define time-min ((frame:get frame-2) 0 0))
+    </input>
+
+    <\input|Scheme] >
+      (define time-max-f (frame-fold max -inf.0 frame-2 "time"))
+    </input>
+
+    <\input|Scheme] >
+      (define time-max ((frame:get frame-2) (- (frame:depth frame-2) 1) 0))
+    </input>
+
+    <\unfolded-prog-io|Scheme] >
+      (list time-min time-min-f time-max time-max-f)
+    <|unfolded-prog-io>
+      (625.925720214844 625.925720214844 626.78515625 626.78515625)
+    </unfolded-prog-io|>
+
+    <\input|Scheme] >
+      (define ax-min (frame-fold min +inf.0 frame-2 "axRaw_1"))
+    </input>
+
+    <\input|Scheme] >
+      (define ax-max (frame-fold max -inf.0 frame-2 "axRaw_1"))
+    </input>
+
+    <\unfolded-prog-io|Scheme] >
+      (list ax-min ax-max)
+    <|unfolded-prog-io>
+      (-2076.0 3992.0)
     </unfolded-prog-io|>
 
     <\unfolded-prog-io|Scheme] >
