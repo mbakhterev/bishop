@@ -16,6 +16,7 @@
 ; (use-syntax (ice-9 syncase))
 
 (use-modules (ice-9 optargs)
+             (ice-9 receive)
              (srfi srfi-13)
              (csv csv))
 
@@ -28,13 +29,12 @@
               (loop (cddr l))
               (cons v (loop (cdr l))))))))
 
-(define (map-vector f v)
+(define (vector-map f v)
   (let* ((n (vector-length v))
          (u (make-vector n)))
     (do ((i 0 (1+ i)))
-        ((>= i n))
-        (vector-set! u i (f (vector-ref v i))))
-    u))
+        ((>= i n) u)
+        (vector-set! u i (f (vector-ref v i))))))
 
 (define (load-csv f)
   (let* ((reader (make-csv-reader #\,))
@@ -50,13 +50,11 @@
     (do ((j 0 (1+ j))) ((>= j m))
       (vector-set! T j (make-f32vector n)))
 
-    (do ((r raw (cdr r)) (i 0 (1+ i))) ((>= i n))
+    (do ((r raw (cdr r)) (i 0 (1+ i))) ((>= i n) T)
       (do ((j 0 (1+ j))) ((>= j m))
         (f32vector-set! (vector-ref T j)
                         i
-                        (f (vector-ref (car r) j)))))
-
-    T))
+                        (f (vector-ref (car r) j)))))))
 
 (define frame:header car)
 (define frame:data cdr) 
@@ -66,10 +64,17 @@
 (define (getter d) (lambda (i j) (f32vector-ref (vector-ref d j) i)))
 (define (frame:get f) (getter (frame:data f)))
 
+(define (row-setter d)
+  (let ((m (vector-length d)))
+    (lambda (i vals)
+      (format #t "setting: i ~a; vals: ~a~%" i vals)
+      (do ((v vals (cdr vals)) (j 0 (1+ j))) ((or (null? vals) (>= j m)))
+        (f32vector-set! (vector-ref d j) i (car v))))))
+
 ; Структура frame будет такая: пара из вектора имён колонок и вектора из
 ; векторов значений
 (define (reframe raw)
-    (cons (map-vector (lambda (s) (string-trim-both s char-set:whitespace))
+    (cons (vector-map (lambda (s) (string-trim-both s char-set:whitespace))
                       (frame:header raw))
           (vectorize (lambda (s) (string->number (string-trim-both s char-set:whitespace)))
                      (frame:data raw))))
@@ -114,11 +119,11 @@
          (h (frame:header frame))
          (m (vector-length h)))
     (do ((i 0 (1+ i))) ((>= i m) positions)
-      (format #t "indexing. i: ~a~%" i)
+      ; (format #t "indexing. i: ~a~%" i)
       (hash-set! positions (vector-ref h i) i))))
 
 (define (select-fields frame fields)
-  (format #t "selecting from frame: ~a~%" (frame:header frame))
+  ; (format #t "selecting from frame: ~a~%" (frame:header frame))
   (let* ((positions (field-index frame))
          (d (frame:data frame))
          (m (vector-length fields))
@@ -126,7 +131,7 @@
     (do ((i 0 (1+ i))) ((>= i m) v)
       (let* ((k (vector-ref fields i))
              (j (hash-ref positions k)))
-        (format #t "picking field: ~a(~a)~%" k j)
+        ; (format #t "picking field: ~a(~a)~%" k j)
         (if (not j)
             (error "No field:" k)
             (vector-set! v i (vector-ref d j)))))))
@@ -139,7 +144,7 @@
                               (array-copy! v u)
                               u))))
         (h (list->vector (skip-keys fields #:copy))))
-    (format #f "picking. header: ~a~%" h)
+    ; (format #f "picking. header: ~a~%" h)
     (cons h (vector-map! cp (select-fields frame h))))) 
 
 (define (vector-map! f v) (let ((m (vector-length v)))
@@ -172,4 +177,15 @@
         (n (frame:depth frame)))
     (do ((i 0 (1+ i)) (r init (a r i))) ((>= i n) r))))
 
-(define (frame-map! frame field . fields) #f)
+(define (frame-map! proc frame field . fields)
+  (let* ((d (select-fields frame (list->vector (cons field fields))))
+         (a (map-applicator proc d))
+         (n (frame:depth frame))
+         (row-set! (row-setter d)))
+    (do ((i 0 (1+ i))) ((>= i n))
+      (receive (. results) (a i)
+               (row-set! i results)
+              ; (display results)
+               ; (newline)
+
+               ))))
