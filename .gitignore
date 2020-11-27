@@ -16,3 +16,9 @@
 !lib
 !lib/csv
 !lib/csv/*.scm
+
+!lib/frame
+!lib/frame/*.scm
+
+!lib/texmacs
+!lib/texmacs/*.scm
