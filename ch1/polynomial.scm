@@ -21,11 +21,14 @@
              (frame core)
              (texmacs show))
 
-(load "../lib/frame/core.scm")
+(define show object->tree)
+
+; (load "../lib/frame/core.scm")
+
 (load "../lib/texmacs/show.scm")
 
-(display frame-map)
-(newline)
-
-(display pick)
-(newline)
+; (display frame-map)
+; (newline)
+; 
+; (display pick)
+; (newline)
