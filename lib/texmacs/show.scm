@@ -99,3 +99,23 @@
                 (graphics
                   (unquote-splicing
                     (map (lambda (i) (i x-scale-factor y-scale-factor)) images)))))))))
+
+(define (point-2d x y)
+  (quasiquote
+    (point (unquote (number->string x)) (unquote (number->string y)))))
+
+(define (dots size style x y)
+  (lambda (x-scale y-scale)
+    (let* ((n (min (f32vector-length x) (f32vector-length y)))
+           (get (lambda (scale v) (lambda (i) (* scale (f32vector-ref v i)))))
+           (x-get (get x-scale x))
+           (y-get (get y-scale y)))
+      (display n)
+      (newline)
+      (do ((i 0 (1+ i))
+           (r '() (cons (point-2d (x-get i) (y-get i)) r)))
+          ((>= i n) (quasiquote
+                      (with "point-size" (unquote style)
+                            "point-style" (unquote style)
+                            "color" "black"
+                            (graphics (unquote-splicing (reverse r))))))))))

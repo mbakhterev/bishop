@@ -23,7 +23,7 @@
 
 (define show object->tree)
 
-; (load "../lib/frame/core.scm")
+(load "../lib/frame/core.scm")
 
 (load "../lib/texmacs/show.scm")
 

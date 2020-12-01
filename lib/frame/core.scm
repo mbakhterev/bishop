@@ -2,8 +2,7 @@
                #:use-module (csv csv)
                #:use-module (ice-9 optargs)
                #:use-module (ice-9 receive)
-               #:export ()
-               #:export (frame:header frame:data frame:width frame:depth frame:get
+               #:export (frame:header frame:data frame:width frame:depth frame:get frame:columns
                          load-csv reframe
                          pick
                          frame-map frame-map! frame-fold))
@@ -136,8 +135,9 @@
          (row-set! (row-setter d)))
     (do ((i 0 (1+ i))) ((>= i n))
       (receive (. results) (a i)
-               (row-set! i results)
-              ; (display results)
-               ; (newline)
+               (row-set! i results))))) 
 
-               )))) 
+; FIXME: Странная своей неэффективностью процедура. Конечно, у нас не Clojure, к
+; сожалению, и не получится apply применять к вектору
+(define (frame:columns frame field . fields)
+  (vector->list (select-fields frame (list->vector (cons field fields)))))
