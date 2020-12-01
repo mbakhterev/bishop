@@ -1,6 +1,7 @@
 (define-module (texmacs show)
                #:use-module (ice-9 optargs)
-               #:use-module (frame core) 
+               #:use-module (srfi srfi-11)
+               #:use-module (frame core)
                #:export (tabulate plotter-2d dots graph function-graph))
 
 (define (correct-index i from upto)
@@ -50,37 +51,51 @@
 ; процедуры будут порождены конструкторами различных изображаемых сущностей
 ; (dots и прочие).
 
+(define (pivot a-scale b-scale n-cells)
+  (let ((left (min a-scale b-scale))
+        (right (max a-scale b-scale)))
+    (cond ((and (zero? left) (zero? right)) (values 0.5 1.0))
+
+          ((not (negative? (* left right))) (values (if (positive? right)
+                                                        0.0
+                                                        n-cells)
+                                                    (/ (max (abs left) (abs right))
+                                                       n-cells)))
+
+          (else (let* ((d (- right left))
+                       (left-length (abs left))
+                       (scale-candidate (/ n-cells d))
+                       (p-candidate (* left-length scale-candidate))
+                       (p (/ (floor p-candidate) n-cells))
+                       (scale (/ p left-length)))
+                  (values p scale))))))
+
 (define* (plotter-2d #:key
                      (cells '(20.0 . 10.0))
-                     (x-scale (cons (/ (car cells) 2.0) (/ (car cells) 2.0)))
-                     (y-scale (cons (/ (cdr cells) 2.0) (/ (cdr cells) 2.0)))
-                     (pivot (cons (/ (car cells) 2.0) (/ (cdr cells) 2.0))))
+                     (x-scale (cons (- (/ (car cells) 2.0)) (/ (car cells) 2.0)))
+                     (y-scale (cons (- (/ (cdr cells) 2.0)) (/ (cdr cells) 2.0))))
   (let* ((x car)
          (y cdr)
          (gw (lambda (v) (format #f "~fgw" v)))
          (gh (lambda (v) (format #f "~fgh" v)))
-         (x-cells (* 1.0 (car cells)))
-         (y-cells (* 1.0 (cdr cells)))
+         (x-cells (* 1.0 (x cells)))
+         (y-cells (* 1.0 (y cells)))
          (cell-width (gw (/ 1.0 x-cells)))
-         (drawing-height (gw (/ y-cells x-cells)))
-         (x-pivot (/ (x pivot) x-cells))
-         (y-pivot (/ (y pivot) y-cells))
-         (x-scale-factor 1.0)
-         (y-scale-factor 1.0))
-
-    ; (display (list cells scales pivot x-pivot y-pivot))
-    ; (newline)
-    (lambda images
-      (quasiquote
-        (with "gr-geometry" (tuple "geometry" "1.0gw" (unquote drawing-height) "center")
-              "gr-frame" (tuple "scale"
-                                (unquote cell-width) 
-                                (tuple (unquote (gw x-pivot))
-                                       (unquote (gh y-pivot))))
-              "gr-grid" (tuple "cartesian" (point "0" "0") "1")
-              "gr-grid-aspect" (tuple (tuple "axes" "#808080")
-                                      (tuple "1" "#c0c0c0"))
-              (graphics
-                (unquote-splicing
-                  (map (lambda (i) (i x-scale-factor y-scale-factor))
-                       images))))))))
+         (drawing-height (gw (/ y-cells x-cells))))
+    (let-values (((x-pivot x-scale-factor) (pivot (car x-scale) (cdr x-scale) x-cells))
+                 ((y-pivot y-scale-factor) (pivot (car y-scale) (cdr y-scale) y-cells)))
+      (display (list (cons x-pivot x-scale-factor) (cons y-pivot y-scale-factor)))
+      (newline)
+      (lambda images
+        (quasiquote
+          (with "gr-geometry" (tuple "geometry" "1.0gw" (unquote drawing-height) "center")
+                "gr-frame" (tuple "scale"
+                                  (unquote cell-width) 
+                                  (tuple (unquote (gw x-pivot))
+                                         (unquote (gh y-pivot))))
+                "gr-grid" (tuple "cartesian" (point "0" "0") "1")
+                "gr-grid-aspect" (tuple (tuple "axes" "#808080")
+                                        (tuple "1" "#c0c0c0"))
+                (graphics
+                  (unquote-splicing
+                    (map (lambda (i) (i x-scale-factor y-scale-factor)) images)))))))))
