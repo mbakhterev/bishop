@@ -59,16 +59,16 @@
           ((not (negative? (* left right))) (values (if (positive? right)
                                                         0.0
                                                         n-cells)
-                                                    (/ (max (abs left) (abs right))
-                                                       n-cells)))
+                                                    (/ n-cells 
+                                                       (max (abs left) (abs right)))))
 
           (else (let* ((d (- right left))
                        (left-length (abs left))
                        (scale-candidate (/ n-cells d))
                        (p-candidate (* left-length scale-candidate))
-                       (p (/ (floor p-candidate) n-cells))
+                       (p (floor p-candidate))
                        (scale (/ p left-length)))
-                  (values p scale))))))
+                  (values (/ p n-cells) scale))))))
 
 (define* (plotter-2d #:key
                      (cells '(20.0 . 10.0))
@@ -84,8 +84,8 @@
          (drawing-height (gw (/ y-cells x-cells))))
     (let-values (((x-pivot x-scale-factor) (pivot (car x-scale) (cdr x-scale) x-cells))
                  ((y-pivot y-scale-factor) (pivot (car y-scale) (cdr y-scale) y-cells)))
-      (display (list (cons x-pivot x-scale-factor) (cons y-pivot y-scale-factor)))
-      (newline)
+      ; (display (list (cons x-pivot x-scale-factor) (cons y-pivot y-scale-factor)))
+      ; (newline)
       (lambda images
         (quasiquote
           (with "gr-geometry" (tuple "geometry" "1.0gw" (unquote drawing-height) "center")
@@ -102,7 +102,7 @@
 
 (define (point-2d x y)
   (quasiquote
-    (point (unquote (number->string x)) (unquote (number->string y)))))
+    (point (unquote (format #f "~f" x)) (unquote (format #f "~f" y)))))
 
 (define (dots size style x y)
   (lambda (x-scale y-scale)
@@ -110,12 +110,12 @@
            (get (lambda (scale v) (lambda (i) (* scale (f32vector-ref v i)))))
            (x-get (get x-scale x))
            (y-get (get y-scale y)))
-      (display n)
-      (newline)
+      ; (display n)
+      ; (newline)
       (do ((i 0 (1+ i))
            (r '() (cons (point-2d (x-get i) (y-get i)) r)))
           ((>= i n) (quasiquote
-                      (with "point-size" (unquote style)
-                            "point-style" (unquote style)
+                      (with "point-size" (unquote (format #f "~dpx" size))
+                            "point-style" (unquote (symbol->string style))
                             "color" "black"
                             (graphics (unquote-splicing (reverse r))))))))))
