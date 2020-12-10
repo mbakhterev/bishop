@@ -108,6 +108,12 @@
                                           ((>= k M) sum))))
       R)))
 
+(define (u32vector-load V) (lambda (i) (u32vector-ref V i)))
+(define (u32vector-store V) (lambda (i v) (u32vector-set! V i v)))
+
+(define (matrix-load M) (lambda (i j) (array-ref M i j)))
+(define (matrix-store M) (lambda (i j v) (array-set! M v i j)))
+
 (define (matrix-decompose-lup A tolerance)
   (when (not (= 2 (array-rank A)))
     (error "Expecting matrix. Given something with rank:" (array-rank A)))
@@ -117,12 +123,12 @@
          (M (cadr dim-A))
 
          (P-data (make-u32vector (1+ L)))
-         (P (lambda (i) (u32vector-ref P-data i)))
-         (P! (lambda (i v) (u32vector-set! P-data i v))) 
+         (P (u32vector-load P-data))
+         (P! (u32vector-store P-data)) 
 
          (LU-data (make-typed-array (array-type A) *unspecified* L M))
-         (LU (lambda (i j) (array-ref LU-data i j)))
-         (LU! (lambda (i j v) (array-set! LU-data v i j)))
+         (LU (matrix-load LU-data))
+         (LU! (matrix-store LU-data))
 
          (swap (lambda (i j) (let ((pi (P i))
                                    (pj (P j))
@@ -137,42 +143,58 @@
                                   (let ((v (abs (LU (P k) i))))
                                     (if (< max-abs v)
                                         (loop (1+ k) v k)
-                                        (loop (1+ k) max-abs i-max))))))))
+                                        (loop (1+ k) max-abs i-max)))))))
+
+         ; Вычесть из j строки α * (i строку), начиная со столбца c.
+         (subtract-row (lambda (c j α i) (do ((k c (1+ k))) ((>= k M))
+                                           (LU! j k (- (LU j k) (* α (LU i k))))))))
     (array-index-map! P-data (lambda (i) i))
     (array-copy! A LU-data)
 
     (do ((i 0 (1+ i))) ((>= i L) (values LU-data P-data))
-      (display i)
-      (newline)
       (display LU-data)
       (newline)
-      (force-output)
       (receive (max-abs i-max) (pivot i)
-        (display (list max-abs i-max i))
-        (newline)
         (when (< max-abs tolerance)
           (error "Matrix is degenerate: pivot value below tolerance:" max-abs))
 
         (when (not (= i-max i)) (swap i-max i))
 
         ; Строки матрицы переставляются для выбора более качественного pivot.
-        ; Перестановка учитывается в таблице P, оттуда же выбираются индексы
-        ; актуальные индексы строк ri и rj.
+        ; Перестановка учитывается в таблице P
         (let* ((ri (P i))
                (Lii (LU ri i)))
-          (display (list ri Lii))
-          (newline)
           (do ((j (1+ i) (1+ j))) ((>= j L))
             (let* ((rj (P j))
                    (Lji (/ (LU rj i) Lii)))
-              (display (list i rj Lji))
-              (newline)
               (LU! rj i Lji)
-              (display (LU rj i))
-              (newline)
-              (do ((k (1+ i) (1+ k))) ((>= k M))
-                (LU! rj k (- (LU rj k) (* Lji (LU rj k))))))))))))
+              (subtract-row (1+ i) rj Lji ri))))))))
 
 (define (matrix-inverse A)
-  #t
-  )
+  (when (not (and (= 2 (array-rank A))
+                  (apply = (array-dimensions A))))
+    (error "Expecting square matrix. Given value with shape:" (array-dimensions A)))
+
+  (let* ((N (car (array-dimensions A)))
+         (R-data (make-typed-array (array-type A) *unspecified* N N)))
+    (receive (LU-data P-data) (matrix-decompose-lup A 1e-10)
+      (let ((R (matrix-load R-data))
+            (R! (matrix-store R-data))
+            (P (u32vector-load P-data))
+            (LU (matrix-load LU-data)))
+        (do ((j 0 (1+ j))) ((>= j N) R-data)
+          (do ((i 0 (1+ i))) ((>= i N))
+            (let ((ri (P i)))
+              (R! i j (if (= j ri) 1.0 0.0))
+
+              (do ((k 0 (1+ k))
+                   (v (R i j) (- v (* (LU ri k) (R k j)))))
+                  ((>= k i) (R! i j v)))))
+
+          (do ((i (1- N) (1- i))) ((negative? i))
+            (let ((ri (P i)))
+              (do ((k (1+ i) (1+ k))
+                   (v (R i j) (- v (* (LU ri k) (R k j)))))
+                  ((>= k N) (R! i j v)))
+
+              (R! i j (/ (R i j) (LU ri i))))))))))
