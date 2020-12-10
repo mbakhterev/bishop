@@ -22,7 +22,7 @@
              (texmacs show))
 
 ; (load "../lib/frame/core.scm")
-; (load "../lib/texmacs/show.scm")
+(load "../lib/texmacs/show.scm")
 
 (define (vandermonde X m)
   (let* ((n (f32vector-length X))
@@ -100,8 +100,8 @@
     ; (display (list type dim-A dim-v L M))
     ; (newline)
     (let ((R (make-typed-array type *unspecified* L)))
-      (display R)
-      (newline)
+      ; (display R)
+      ; (newline)
       (array-index-map! R (lambda (i) (do ((k 0 (1+ k))
                                            (sum 0.0 (+ sum (* (array-ref A i k)
                                                               (array-ref v k)))))
@@ -152,8 +152,8 @@
     (array-copy! A LU-data)
 
     (do ((i 0 (1+ i))) ((>= i L) (values LU-data P-data))
-      (display LU-data)
-      (newline)
+      ; (display LU-data)
+      ; (newline)
       (receive (max-abs i-max) (pivot i)
         (when (< max-abs tolerance)
           (error "Matrix is degenerate: pivot value below tolerance:" max-abs))
@@ -198,3 +198,17 @@
                   ((>= k N) (R! i j v)))
 
               (R! i j (/ (R i j) (LU ri i))))))))))
+
+(define (vector-load V) (lambda (i) (array-ref V i)))
+
+(define (polynomial A-data)
+  (when (not (and (= 1 (array-rank A-data))))
+    (error "Expecting coefficients vector. Given value with shape:" (array-dimensions A)))
+
+  (let ((N (car (array-dimensions A)))
+        (A (vector-load A-data)))
+    (lambda (x)
+      (do ((i 0 (1+ i))
+           (v 1 (* v x))
+           (r (A 0) (+ r (* (A i) v))))
+          ((>= i N) r)))))

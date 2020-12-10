@@ -119,3 +119,10 @@
                             "point-style" (unquote (symbol->string style))
                             "color" "black"
                             (graphics (unquote-splicing (reverse r))))))))))
+
+(define (function-graph f left right)
+  (let* ((N 20)
+         (δ (/ (- right left) N)))
+
+    )
+  )
