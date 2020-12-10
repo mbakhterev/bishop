@@ -177,7 +177,7 @@
 
   (let* ((N (car (array-dimensions A)))
          (R-data (make-typed-array (array-type A) *unspecified* N N)))
-    (receive (LU-data P-data) (matrix-decompose-lup A 1e-10)
+    (receive (LU-data P-data) (matrix-decompose-lup A 1e-15)
       (let ((R (matrix-load R-data))
             (R! (matrix-store R-data))
             (P (u32vector-load P-data))
@@ -203,9 +203,10 @@
 
 (define (polynomial A-data)
   (when (not (and (= 1 (array-rank A-data))))
-    (error "Expecting coefficients vector. Given value with shape:" (array-dimensions A)))
+    (error "Expecting coefficients vector. Given value with shape:"
+           (array-dimensions A-data)))
 
-  (let ((N (car (array-dimensions A)))
+  (let ((N (car (array-dimensions A-data)))
         (A (vector-load A-data)))
     (lambda (x)
       (do ((i 0 (1+ i))

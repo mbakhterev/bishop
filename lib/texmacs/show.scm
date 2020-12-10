@@ -121,8 +121,9 @@
                             (graphics (unquote-splicing (reverse r))))))))))
 
 (define (function-graph f left right)
-  (let* ((N 20)
+  (let* ((N 256)
          (δ (/ (- right left) N)))
-
-    )
-  )
+    (lambda (x-scale y-scale)
+      (do ((x left (+ x δ))
+           (r '() (cons (point-2d (* x-scale x) (* y-scale (f x))) r)))
+          ((> x right) (quasiquote (spline (unquote-splicing (reverse r)))))))))
