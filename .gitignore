@@ -12,6 +12,7 @@
 
 !scratchpad
 !scratchpad/*.stm
+!scratchpad/*.scm
 
 !lib
 !lib/csv
